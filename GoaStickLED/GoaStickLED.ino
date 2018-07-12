@@ -23,7 +23,7 @@ void CalculateValues(int addPeak);
 
 
 void setup() {
-  
+  Serial.begin(115200);
   strip.begin();
   for (int i = 0; i < NUM_LEDS; i++) {
     SetPixel(i);
@@ -48,7 +48,10 @@ void loop() {
   unsigned int signalMin = 1024;
 
   static int lastPP = 100;
-
+  
+  calc_sample_period();
+  fft_sample();
+  
   //Calculte peek to peek
   while (millis() - startMillis < sampleWindow) {
 
