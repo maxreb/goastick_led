@@ -1,13 +1,12 @@
 #include "Arduino.h"
 #include "Adafruit_NeoPixel.h"
+#include "FFT.h"
+#include "GoaStickLED.h"
 #ifdef __AVR__
 #include <avr/power.h>
 #endif
 
 
-#define NUM_LEDS 15
-#define PIN 13
-#define MIC_PIN 33
 
 const int maxScale = 10; //Scale analog ampl to 0 to maxScale
 const int sampling_rate_Hz = 20;
@@ -48,10 +47,11 @@ void loop() {
   unsigned int signalMin = 1024;
 
   static int lastPP = 100;
-  
+  for (int i = 0; i<NUM_LEDS;i++)
+    strip.setPixelColor(i, 0x000000);
   calc_sample_period();
   fft_sample();
-  
+  /*
   //Calculte peek to peek
   while (millis() - startMillis < sampleWindow) {
 
@@ -79,8 +79,8 @@ void loop() {
   int displayPeak = map(peakToPeak, digital_ampl_min, digital_ampl_max, 0, maxScale);
 
   CalculateValues(displayPeak);
-  delay(1);//this is important to avoid flickering of the LEDs
-
+  */
+ delay(1);//this is important to avoid flickering of the LEDs
   strip.show();
 }
 

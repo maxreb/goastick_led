@@ -1,4 +1,6 @@
 #include "arduinoFFT.h" // Standard Arduino FFT library https://github.com/kosme/arduinoFFT
+#include "FFT.h"
+#include "GoaStickLED.h"
 arduinoFFT FFT = arduinoFFT();
 
 
@@ -6,6 +8,7 @@ arduinoFFT FFT = arduinoFFT();
 #define SAMPLING_FREQUENCY 40000 // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
 #define amplitude 150            // Depending on your audio source level, you may need to increase this value
 unsigned int sampling_period_us;
+void displayBand(int band, int dsize);
 unsigned long microseconds;
 byte peak[] = {0,0,0,0,0,0,0,0};
 double vReal[SAMPLES];
@@ -34,6 +37,10 @@ void fft_sample() {
   for (int i = 2; i < (SAMPLES/2); i++){ // Don't use sample 0 and only the first SAMPLES/2 are usable.
     // Each array element represents a frequency and its value, is the amplitude. Note the frequencies are not discrete.
     if (vReal[i] > 1500) { // Add a crude noise filter, 10 x amplitude or more
+
+      int mapping = map(i,7,80,0,NUM_LEDS);
+      strip.setPixelColor(mapping,0x006600);
+
       if (i<=2 )             displayBand(125,(int)vReal[i]); // 125Hz
       if (i >2   && i<=4 )   displayBand(250,(int)vReal[i]); // 250Hz
       if (i >4   && i<=7 )   displayBand(500,(int)vReal[i]); // 500Hz
@@ -51,6 +58,8 @@ void fft_sample() {
 
 //change this function tp do something
 void displayBand(int band, int dsize){
+ 
+
   Serial.print(band);
   Serial.print("Hz: ");
   Serial.println(dsize);
