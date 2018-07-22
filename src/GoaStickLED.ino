@@ -6,102 +6,155 @@
 #include <avr/power.h>
 #endif
 
-
-
 const int maxScale = 10; //Scale analog ampl to 0 to maxScale
 const int sampling_rate_Hz = 20;
-const int digital_ampl_min = 10;//Starting the Analog Signal from this to...
-const int digital_ampl_max = 250;//...this 
-const int digital_ampl_cut = 7;//everything under this will be cut (background noise)
+const int digital_ampl_min = 10;                  //Starting the Analog Signal from this to...
+const int digital_ampl_max = 250;                 //...this
+const int digital_ampl_cut = 7;                   //everything under this will be cut (background noise)
 const int sampleWindow = 1000 / sampling_rate_Hz; // Sample window width in mS (50 mS = 20Hz)
 
 unsigned int sample;
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
+u_char Mode;
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 void SetPixel(int i);
-void CalculateValues(int addPeak);
+void CalculateColoredLoudnessValues(int addPeak);
 
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   strip.begin();
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
     SetPixel(i);
     strip.show();
     delay(33);
   }
   delay(1000);
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
     strip.setPixelColor(i, 0);
     strip.show();
     delay(33);
   }
 
-  randomSeed(analogRead(MIC_PIN));  
+  pinMode(BUTTON_MODE_PIN, INPUT);
+  pinMode(MIC_PIN, INPUT);
+
+  randomSeed(analogRead(MIC_PIN));
 }
 
-void loop() {
+void loop()
+{
+  static int buttonState = 0;
+
+  if (buttonState == 0 &&  digitalRead(BUTTON_MODE_PIN) == 1)
+  {
+    Mode++;
+  }
+
+  buttonState = digitalRead(BUTTON_MODE_PIN);
+
+  switch (Mode)
+  {
+  case 0:
+    Mode_LoudnessColor();
+    break;
+  case 1:
+    Mode_FFTDefault();
+    break;
+  default:
+    Mode = 0;
+  }
+
+  for (int i = 0; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, 0x000000);
+
+  /*
+
+  CalculateColoredLoudnessValues
+(displayPeak);
+  */
+  delay(1); //this is important to avoid flickering of the LEDs
+  strip.show();
+}
+
+int calculateLoudness()
+{
   unsigned long startMillis = millis(); // Start of sample window
-  unsigned int peakToPeak = 0;   // peak-to-peak level
+  unsigned int peakToPeak = 0;          // peak-to-peak level
 
   unsigned int signalMax = 0;
   unsigned int signalMin = 1024;
-
   static int lastPP = 100;
-  for (int i = 0; i<NUM_LEDS;i++)
-    strip.setPixelColor(i, 0x000000);
-  calc_sample_period();
-  fft_sample();
-  /*
   //Calculte peek to peek
-  while (millis() - startMillis < sampleWindow) {
+  while (millis() - startMillis < sampleWindow)
+  {
 
     sample = analogRead(MIC_PIN);
-    if (sample < 1024)  // toss out spurious readings
+    if (sample < 1024) // toss out spurious readings
     {
-      if (sample > signalMax) {
-        signalMax = sample;  // save just the max levels
-      } else if (sample < signalMin) {
-        signalMin = sample;  // save just the min levels
+      if (sample > signalMax)
+      {
+        signalMax = sample; // save just the max levels
+      }
+      else if (sample < signalMin)
+      {
+        signalMin = sample; // save just the min levels
       }
     }
   }
   peakToPeak = signalMax - signalMin;
   //Cut all under digital_ampl_cut (Default 7)
-  if (lastPP < digital_ampl_cut) {
+  if (lastPP < digital_ampl_cut)
+  {
     lastPP = peakToPeak;
     peakToPeak = 0;
-  } else
+  }
+  else
     lastPP = peakToPeak;
 
   //Serial.println(peakToPeak);
 
   // map 1v p-p level to the max scale of the display
-  int displayPeak = map(peakToPeak, digital_ampl_min, digital_ampl_max, 0, maxScale);
+  return map(peakToPeak, digital_ampl_min, digital_ampl_max, 0, maxScale);
+}
 
-  CalculateValues(displayPeak);
-  */
- delay(1);//this is important to avoid flickering of the LEDs
-  strip.show();
+void Mode_FFTDefault()
+{
+  calc_sample_period();
+  fft_sample();
+}
+
+void Mode_LoudnessColor()
+{
+  CalculateColoredLoudnessValues(calculateLoudness());
 }
 
 //Calcultate LED Values
-void CalculateValues(int addPeak) {
+void CalculateColoredLoudnessValues(int addPeak)
+{
   unsigned long currentMillis = millis();
   int test = 1;
-  for (int i = 0; i < NUM_LEDS; i++) {
-  if (i < addPeak) {
-   SetPixel(i);
-    } else {
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    if (i < addPeak)
+    {
+      SetPixel(i);
+    }
+    else
+    {
       strip.setPixelColor(i, 0x000000);
     }
   }
 }
 
 //Set pixel to the right color depending on which position it is
-void SetPixel(int i) {
+void SetPixel(int i)
+{
   if (i < NUM_LEDS / 2)
     strip.setPixelColor(i, 0x005500);
-  else if ( i >= NUM_LEDS / 2 && i < (NUM_LEDS / 3) * 2)
+  else if (i >= NUM_LEDS / 2 && i < (NUM_LEDS / 3) * 2)
     strip.setPixelColor(i, 0x555500);
   else
     strip.setPixelColor(i, 0x550000);
