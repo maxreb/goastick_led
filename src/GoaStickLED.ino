@@ -2,23 +2,38 @@
 #include "Adafruit_NeoPixel.h"
 #include "FFT.h"
 #include "GoaStickLED.h"
+#include "ScrollVis.h"
+
 #ifdef __AVR__
 #include <avr/power.h>
 #endif
 
-const int maxScale = 10; //Scale analog ampl to 0 to maxScale
-const int sampling_rate_Hz = 20;
+//Scale analog ampl to 0 to MAX_LOUDNESS_SCALE
+const int sampling_rate_Hz = 100;
 const int digital_ampl_min = 10;                  //Starting the Analog Signal from this to...
 const int digital_ampl_max = 250;                 //...this
-const int digital_ampl_cut = 7;                   //everything under this will be cut (background noise)
+const int digital_ampl_cut = 15;                  //everything under this will be cut (background noise)
 const int sampleWindow = 1000 / sampling_rate_Hz; // Sample window width in mS (50 mS = 20Hz)
 
 unsigned int sample;
-u_char Mode;
+u_char Mode = 0;
+
+uint32_t LedColors[NUM_LEDS];
+int NumLEDsPerStripe = NUM_LEDS / NUM_STRIPES;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
-void SetPixel(int i);
+uint32_t SetPixel(int i);
 void CalculateColoredLoudnessValues(int addPeak);
+
+void Display()
+{
+  for (int i = 0; i < NUM_LEDS / NUM_STRIPES; i++)
+  {
+    Serial.print(LedColors[i]);
+    Serial.print(", ");
+  }
+  Serial.println("");
+}
 
 void setup()
 {
@@ -42,18 +57,28 @@ void setup()
   pinMode(MIC_PIN, INPUT);
 
   randomSeed(analogRead(MIC_PIN));
+  /*
+  while (1){
+      Serial.println(digitalRead(BUTTON_MODE_PIN));
+      delay(100);
+  }*/
 }
 
 void loop()
 {
   static int buttonState = 0;
 
-  if (buttonState == 0 &&  digitalRead(BUTTON_MODE_PIN) == 1)
+  if (buttonState == 0 && digitalRead(BUTTON_MODE_PIN) == 1)
   {
+    Serial.print("mode++: ");
     Mode++;
+    Serial.println(Mode);
   }
 
   buttonState = digitalRead(BUTTON_MODE_PIN);
+
+  strip.clear();                           //reset strip
+  memset(LedColors, 0, sizeof(LedColors)); //reset
 
   switch (Mode)
   {
@@ -63,13 +88,17 @@ void loop()
   case 1:
     Mode_FFTDefault();
     break;
+  case 2:
+    Mode_LoudnessCenter();
+    break;
   default:
+    Serial.println(Mode);
     Mode = 0;
   }
 
   for (int i = 0; i < NUM_LEDS; i++)
-    strip.setPixelColor(i, 0x000000);
-
+    strip.setPixelColor(i, LedColors[i]);
+  delay(10);
   /*
 
   CalculateColoredLoudnessValues
@@ -117,7 +146,7 @@ int calculateLoudness()
   //Serial.println(peakToPeak);
 
   // map 1v p-p level to the max scale of the display
-  return map(peakToPeak, digital_ampl_min, digital_ampl_max, 0, maxScale);
+  return map(peakToPeak, digital_ampl_min, digital_ampl_max, 0, MAX_LOUDNESS_SCALE);
 }
 
 void Mode_FFTDefault()
@@ -131,31 +160,63 @@ void Mode_LoudnessColor()
   CalculateColoredLoudnessValues(calculateLoudness());
 }
 
+void Mode_LoudnessCenter()
+{
+  int able = calculateLoudness();
+  ScrollVis(able);
+  //Serial.print(able);
+  //Serial.print(" -> ");
+  //Display();
+}
+
 //Calcultate LED Values
 void CalculateColoredLoudnessValues(int addPeak)
 {
+  int pixel = map(addPeak, 0, MAX_LOUDNESS_SCALE, 0, NumLEDsPerStripe);
   unsigned long currentMillis = millis();
-  int test = 1;
+  int stripe = 0;
   for (int i = 0; i < NUM_LEDS; i++)
   {
-    if (i < addPeak)
+    int _i = i / NumLEDsPerStripe;
+    _i = i - (_i * NumLEDsPerStripe);
+    if (_i < pixel)
     {
-      SetPixel(i);
+
+      LedColors[i] = SetPixel(_i);
     }
     else
     {
-      strip.setPixelColor(i, 0x000000);
+      //strip.setPixelColor(i, 0x000000);
     }
   }
 }
 
 //Set pixel to the right color depending on which position it is
-void SetPixel(int i)
+uint32_t SetPixel(int i)
+
 {
   if (i < NUM_LEDS / 2)
-    strip.setPixelColor(i, 0x005500);
+    return strip.Color(0, MAX_LOUDNESS_SCALE, 0);
   else if (i >= NUM_LEDS / 2 && i < (NUM_LEDS / 3) * 2)
-    strip.setPixelColor(i, 0x555500);
+    return strip.Color(MAX_LOUDNESS_SCALE, MAX_LOUDNESS_SCALE, 0);
   else
-    strip.setPixelColor(i, 0x550000);
+    return strip.Color(MAX_LOUDNESS_SCALE, 0, 0);
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+uint32_t Wheel(uint8_t WheelPos)
+{
+  WheelPos = 255 - WheelPos;
+  if (WheelPos < 85)
+  {
+    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  }
+  if (WheelPos < 170)
+  {
+    WheelPos -= 85;
+    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+  WheelPos -= 170;
+  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
