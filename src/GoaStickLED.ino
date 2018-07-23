@@ -195,9 +195,9 @@ void CalculateColoredLoudnessValues(int addPeak)
 uint32_t SetPixel(int i)
 
 {
-  if (i < NUM_LEDS / 2)
+  if (i < NumLEDsPerStripe / 2)
     return strip.Color(0, MAX_LOUDNESS_SCALE, 0);
-  else if (i >= NUM_LEDS / 2 && i < (NUM_LEDS / 3) * 2)
+  else if (i >= NumLEDsPerStripe / 2 && i < (NumLEDsPerStripe / 3) * 2)
     return strip.Color(MAX_LOUDNESS_SCALE, MAX_LOUDNESS_SCALE, 0);
   else
     return strip.Color(MAX_LOUDNESS_SCALE, 0, 0);

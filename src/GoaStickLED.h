@@ -24,7 +24,7 @@
 extern uint32_t LedColors[NUM_LEDS];//TODO make it extern
 extern int NumLEDsPerStripe;
 uint32_t Wheel(uint8_t  WheelPos);
-#include "Adafruit_NeoPixel.h";
+#include "Adafruit_NeoPixel.h"
 extern Adafruit_NeoPixel strip;
 #endif
 
