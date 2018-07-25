@@ -3,6 +3,7 @@
 #include "FFT.h"
 #include "GoaStickLED.h"
 #include "ScrollVis.h"
+#include "OtherVis.h"
 
 #ifdef __AVR__
 #include <avr/power.h>
@@ -39,16 +40,24 @@ void setup()
 {
   Serial.begin(115200);
   strip.begin();
+  Serial.println("Start GoaStick 1.0.1");
   for (int i = 0; i < NUM_LEDS; i++)
   {
-    SetPixel(i);
+    if (i > 0)
+    {
+      strip.setPixelColor(i - 1, 0);
+    }
+    strip.setPixelColor(i, 0x777777);
     strip.show();
     delay(33);
   }
-  delay(1000);
-  for (int i = 0; i < NUM_LEDS; i++)
+  for (int i = NUM_LEDS; i > 0; i--)
   {
-    strip.setPixelColor(i, 0);
+    if (i < NUM_LEDS)
+    {
+      strip.setPixelColor(i + 1, 0);
+    }
+    strip.setPixelColor(i, 0x777777);
     strip.show();
     delay(33);
   }
@@ -56,6 +65,7 @@ void setup()
   pinMode(BUTTON_MODE_PIN, INPUT);
   pinMode(MIC_PIN, INPUT);
 
+  Serial.println("Init Done.");
   randomSeed(analogRead(MIC_PIN));
   /*
   while (1){
@@ -77,8 +87,7 @@ void loop()
 
   buttonState = digitalRead(BUTTON_MODE_PIN);
 
-  strip.clear();                           //reset strip
-  memset(LedColors, 0, sizeof(LedColors)); //reset
+  strip.clear(); //reset strip
 
   switch (Mode)
   {
@@ -91,21 +100,48 @@ void loop()
   case 2:
     Mode_LoudnessCenter();
     break;
+  case 3:
+  case 4:
+  case 5:
+    Mode_OtherVis(Mode - 3);
+    break;
   default:
+    Serial.print("Default:");
     Serial.println(Mode);
     Mode = 0;
   }
-
-  for (int i = 0; i < NUM_LEDS; i++)
-    strip.setPixelColor(i, LedColors[i]);
-  delay(10);
+  if (Mode < 3)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+      strip.setPixelColor(i, LedColors[i]);
+    delay(1); //this is important to avoid flickering of the LEDs
+    strip.show();
+  }
   /*
 
   CalculateColoredLoudnessValues
 (displayPeak);
   */
-  delay(1); //this is important to avoid flickering of the LEDs
-  strip.show();
+}
+
+void Mode_OtherVis(uint8_t mode)
+{
+  int loudness = (MAX_LOUDNESS_SCALE - calculateLoudness()) ;
+  if (loudness > 100)
+    loudness = 100;
+  Serial.println(loudness,DEC);
+  delay(33);
+  switch (mode)
+  {
+  case 0:
+    lauflicht(loudness);
+    break;
+  case 1:
+    rainbowCycle(loudness);
+    break;
+  case 2:
+    theaterChaseRainbow(loudness);
+  }
 }
 
 int calculateLoudness()
@@ -151,12 +187,14 @@ int calculateLoudness()
 
 void Mode_FFTDefault()
 {
+  memset(LedColors, 0, sizeof(LedColors)); //reset
   calc_sample_period();
   fft_sample();
 }
 
 void Mode_LoudnessColor()
 {
+  memset(LedColors, 0, sizeof(LedColors)); //reset
   CalculateColoredLoudnessValues(calculateLoudness());
 }
 
@@ -164,9 +202,9 @@ void Mode_LoudnessCenter()
 {
   int able = calculateLoudness();
   ScrollVis(able);
-  //Serial.print(able);
-  //Serial.print(" -> ");
-  //Display();
+  Serial.print(able);
+  Serial.print(" -> ");
+  Display();
 }
 
 //Calcultate LED Values
@@ -203,20 +241,20 @@ uint32_t SetPixel(int i)
     return strip.Color(MAX_LOUDNESS_SCALE, 0, 0);
 }
 
-// Input a value 0 to 255 to get a color value.
+// Input a value 0 to MAX_LOUDNESS_SCALE to get a color value.
 // The colours are a transition r - g - b - back to r.
 uint32_t Wheel(uint8_t WheelPos)
 {
   WheelPos = 255 - WheelPos;
   if (WheelPos < 85)
   {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    return strip.Color(MAX_LOUDNESS_SCALE - WheelPos * 3, 0, WheelPos * 3);
   }
   if (WheelPos < 170)
   {
     WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    return strip.Color(0, WheelPos * 3, MAX_LOUDNESS_SCALE - WheelPos * 3);
   }
   WheelPos -= 170;
-  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  return strip.Color(WheelPos * 3, MAX_LOUDNESS_SCALE - WheelPos * 3, 0);
 }

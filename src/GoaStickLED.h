@@ -5,8 +5,8 @@
 
 
 
-#define NUM_LEDS 16 // total number of all connected LEDs
-#define NUM_STRIPES 2 // number of stripes. On NUM_LEDS / NUM_STRIPES will be seperated
+#define NUM_LEDS 10 // total number of all connected LEDs
+#define NUM_STRIPES 1 // number of stripes. On NUM_LEDS / NUM_STRIPES will be seperated
 
 #define LED_PIN 13
 #define MIC_PIN 33

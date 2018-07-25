@@ -1,6 +1,6 @@
 #include "GoaStickLED.h"
 
-#define SCROLLVIS_FADEOUT 0.75
+#define SCROLLVIS_FADEOUT 0.55
 #define SCROLLVIS_MINIMUM_CUT 0.15
 
 

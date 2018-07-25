@@ -4,7 +4,8 @@
 #include <cstdio>
 #include <inttypes.h>
 
-
+#define SCROLLVIS_FADEOUT 0.35
+#define SCROLLVIS_MINIMUM_CUT 0.15
 uint32_t LedColors[NUM_LEDS];
 
 int NumLEDsPerStripe = NUM_LEDS / NUM_STRIPES;

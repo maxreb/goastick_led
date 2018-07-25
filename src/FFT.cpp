@@ -40,15 +40,15 @@ void fft_sample()
   FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
   FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
   //Serial.println("-------------------------------------------------");
-  for (int i = 2; i < (SAMPLES / 2); i++)
+  for (int i = 2; i < 100; i++)
   { // Don't use sample 0 and only the first SAMPLES/2 are usable.
     // Each array element represents a frequency and its value, is the amplitude. Note the frequencies are not discrete.
 
     if (vReal[i] > 1000)
     { // Add a crude noise filter, 10 x amplitude or more
 
-      uint8_t mapping = map(i, 0, 80, 0, NumLEDsPerStripe);
-      if (mapping > NumLEDsPerStripe)
+      uint8_t mapping = map(i, 0, 100, 0, NumLEDsPerStripe - 1);
+      if (mapping > NumLEDsPerStripe - 1)
         mapping = NumLEDsPerStripe;
       uint8_t loudness = map((long)vReal[i], 1000, 3500, 0, MAX_LOUDNESS_SCALE);
       if (loudness > MAX_LOUDNESS_SCALE)
@@ -59,6 +59,7 @@ void fft_sample()
 
 
       for (int n = 0; n < NUM_STRIPES;n++){
+        
         LedColors[n * NumLEDsPerStripe + mapping] = color;
         }
       /*
