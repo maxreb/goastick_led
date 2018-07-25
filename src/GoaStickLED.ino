@@ -10,10 +10,10 @@
 #endif
 
 //Scale analog ampl to 0 to MAX_LOUDNESS_SCALE
-const int sampling_rate_Hz = 100;
+const int sampling_rate_Hz = 20;
 const int digital_ampl_min = 10;                  //Starting the Analog Signal from this to...
 const int digital_ampl_max = 250;                 //...this
-const int digital_ampl_cut = 15;                  //everything under this will be cut (background noise)
+const int digital_ampl_cut = 20;                  //everything under this will be cut (background noise)
 const int sampleWindow = 1000 / sampling_rate_Hz; // Sample window width in mS (50 mS = 20Hz)
 
 unsigned int sample;
@@ -103,6 +103,7 @@ void loop()
   case 3:
   case 4:
   case 5:
+  case 6:
     Mode_OtherVis(Mode - 3);
     break;
   default:
@@ -114,9 +115,11 @@ void loop()
   {
     for (int i = 0; i < NUM_LEDS; i++)
       strip.setPixelColor(i, LedColors[i]);
+    strip.setBrightness(MAX_BRIGTHNESS);
     delay(1); //this is important to avoid flickering of the LEDs
     strip.show();
   }
+
   /*
 
   CalculateColoredLoudnessValues
@@ -126,11 +129,13 @@ void loop()
 
 void Mode_OtherVis(uint8_t mode)
 {
-  int loudness = (MAX_LOUDNESS_SCALE - calculateLoudness()) ;
+  int loudness = (MAX_LOUDNESS_SCALE - calculateLoudness());
   if (loudness > 100)
     loudness = 100;
-  Serial.println(loudness,DEC);
-  delay(33);
+  if (loudness <= 0)
+    loudness = 1;
+  //Serial.println(loudness, DEC);
+  delay(5);
   switch (mode)
   {
   case 0:
@@ -140,7 +145,13 @@ void Mode_OtherVis(uint8_t mode)
     rainbowCycle(loudness);
     break;
   case 2:
+    if (loudness < 20)
+      loudness = 20;
     theaterChaseRainbow(loudness);
+    break;
+  case 3:
+    simpleRun(loudness);
+    break;
   }
 }
 
@@ -202,9 +213,10 @@ void Mode_LoudnessCenter()
 {
   int able = calculateLoudness();
   ScrollVis(able);
-  Serial.print(able);
-  Serial.print(" -> ");
-  Display();
+  //Serial.print(able);
+
+  //Serial.print(" -> ");
+  //Display();
 }
 
 //Calcultate LED Values

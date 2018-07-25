@@ -4,3 +4,4 @@
 void lauflicht(int spied);
 void rainbowCycle(int spied);
 void theaterChaseRainbow(int spied);
+void simpleRun(int spied);

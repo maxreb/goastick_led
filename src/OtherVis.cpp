@@ -30,6 +30,7 @@ void lauflicht(int spied)
         strip.setPixelColor(rueck + 6, 0, 250, 50);
         strip.setPixelColor(rueck + 7, 0, 0, 0);
         rueck--;
+        strip.setBrightness(MAX_BRIGTHNESS);
         strip.show();
         delay(spied);
     }
@@ -58,31 +59,34 @@ void lauflicht(int spied)
         strip.setPixelColor(rueck + 6, 0, 250, 50);
         strip.setPixelColor(rueck + 7, 0, 0, 0);
         rueck++;
+        strip.setBrightness(MAX_BRIGTHNESS);
         strip.show();
         delay(spied);
     }
 }
 
-void rainbowCycle(int spied)
+// Slightly different, this makes the rainbow equally distributed throughout
+void rainbowCycle(int wait)
 {
-    uint16_t i,j;
-    for (j = 0; j < 256 * 5; j++)
-    { // 5 cycles of all colors on wheel
-        for (i = 0; i < strip.numPixels(); i++)
-        {
-            if (digitalRead(BUTTON_MODE_PIN))
-                return;
-
-            strip.setPixelColor(i, (Wheel(((i * 256 / strip.numPixels()) + j) & 255)));
-        }
-
-        strip.show();
-        delay(spied);
+    uint16_t i;
+    static uint16_t j;
+    j += 4;
+    if (j >= 256 * 5)
+    {
+        j = 0;
     }
+
+    for (i = 0; i < strip.numPixels(); i++)
+    {
+        strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+    }
+    strip.setBrightness(MAX_BRIGTHNESS);
+    strip.show();
+    delay(wait);
 }
 
 //Theatre-style crawling lights with rainbow effect
-void theaterChaseRainbow(int spied)
+void theaterChaseRainbow(int wait)
 {
     static int j = 0;
     j++;
@@ -91,18 +95,47 @@ void theaterChaseRainbow(int spied)
 
     for (int q = 0; q < 3; q++)
     {
-
         for (uint16_t i = 0; i < strip.numPixels(); i = i + 3)
         {
             strip.setPixelColor(i + q, Wheel((i + j) % 255)); //turn every third pixel on
         }
+        strip.setBrightness(MAX_BRIGTHNESS);
         strip.show();
 
-        delay(spied);
+        delay(wait);
 
         for (uint16_t i = 0; i < strip.numPixels(); i = i + 3)
         {
             strip.setPixelColor(i + q, 0); //turn every third pixel off
         }
     }
+}
+
+void simpleRun(int wait)
+{
+    static int cnt = 0;
+    static int wheel = 0;
+
+    if (++wheel > 255)
+        wheel = 0;
+    for (int stripe = 0; stripe < NUM_STRIPES; stripe++)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            if (cnt + i < NumLEDsPerStripe)
+            {
+                strip.setPixelColor((stripe * NumLEDsPerStripe) + cnt + i, Wheel(wheel));
+            }
+            else
+            {
+                strip.setPixelColor((stripe * NumLEDsPerStripe) + cnt + i - NumLEDsPerStripe, Wheel(wheel));
+            }
+        }
+    }
+    delay(wait);
+    strip.setBrightness(MAX_BRIGTHNESS);
+    strip.show();
+    cnt++;
+    if (cnt > NumLEDsPerStripe)
+        cnt = 1;
 }

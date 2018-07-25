@@ -5,8 +5,8 @@
 #include <inttypes.h>
 arduinoFFT FFT = arduinoFFT();
 
-#define SAMPLES 512              // Must be a power of 2
-#define SAMPLING_FREQUENCY 20000 // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
+#define SAMPLES 1024              // Must be a power of 2
+#define SAMPLING_FREQUENCY 40000 // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
 #define amplitude 150            // Depending on your audio source level, you may need to increase this value
 unsigned int sampling_period_us;
 void displayBand(int band, int dsize);
